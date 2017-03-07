@@ -66,14 +66,13 @@ loop1:
 			sema <- struct{}{}
 
 			go func(sema chan struct{}) {
-				defer func() { <-sema }() // release
 				// make request
 				req, _ := http.NewRequest(med, uri, bytes.NewReader(pdata))
 				req.Header.Add("Content-Type", cot)
 				// stat
 				start := time.Now().UnixNano()
 				// do request
-				err := do(client, req)
+				err := do(client, req, sema)
 				end := time.Now().UnixNano()
 				logs.Debug("cost", (end-start)/1000000)
 				if err != nil {
@@ -92,7 +91,8 @@ loop1:
 	}
 }
 
-func do(client *http.Client, req *http.Request) error {
+func do(client *http.Client, req *http.Request, sema chan struct{}) error {
+	defer func() { <-sema }() // release
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
