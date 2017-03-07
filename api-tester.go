@@ -25,10 +25,6 @@ func main() {
 	// prepare
 	c, _ := rrutils.FlagGetInt("c")
 	n, _ := rrutils.FlagGetInt("n")
-	if !rrutils.FlagIsSet("c") {
-		logs.Error("c not set")
-		return
-	}
 
 	var (
 		sema   = make(chan struct{}, c)
@@ -51,12 +47,11 @@ func main() {
 		}
 	}
 
-	method, _ := rrutils.FlagGetString("method")
-
+	med, _ := rrutils.FlagGetString("method")
 	uri, _ := rrutils.FlagGetString("uri")
-	ct, _ := rrutils.FlagGetString("T")
+	cot, _ := rrutils.FlagGetString("T")
 
-	// make request
+	// common http client
 	client := &http.Client{}
 
 	// dispatch
@@ -65,16 +60,19 @@ loop1:
 	for {
 		select {
 		case bucket <- struct{}{}:
-			// write ok, bucket not full
+			// write ok, still has some requests to make
+
 			// try write
 			sema <- struct{}{}
+
 			go func(sema chan struct{}) {
 				defer func() { <-sema }() // release
-				// do request
-				req, _ := http.NewRequest(method, uri, bytes.NewReader(pdata))
-				req.Header.Add("Content-Type", ct)
+				// make request
+				req, _ := http.NewRequest(med, uri, bytes.NewReader(pdata))
+				req.Header.Add("Content-Type", cot)
 				// stat
 				start := time.Now().UnixNano()
+				// do request
 				err := do(client, req)
 				end := time.Now().UnixNano()
 				logs.Debug("cost", (end-start)/1000000)
@@ -82,10 +80,11 @@ loop1:
 					logs.Error(err)
 				}
 			}(sema)
-			// bucket full, job done
+
 		case <-tick:
+			// bucket full, job done
 			if len(sema) < 1 {
-				// done
+				// all request returned
 				logs.Info("Done")
 				break loop1
 			}
