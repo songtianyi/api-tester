@@ -69,11 +69,13 @@ loop1:
 				// make request
 				req, _ := http.NewRequest(med, uri, bytes.NewReader(pdata))
 				req.Header.Add("Content-Type", cot)
-				// stat
-				start := time.Now().UnixNano()
+
 				// do request
+				start := time.Now().UnixNano()
 				err := do(client, req, sema)
 				end := time.Now().UnixNano()
+
+				// stat and output
 				logs.Debug("cost", (end-start)/1000000)
 				if err != nil {
 					logs.Error(err)
@@ -81,7 +83,7 @@ loop1:
 			}(sema)
 
 		case <-tick:
-			// bucket full, job done
+			// bucket full, all requests dispatched
 			if len(sema) < 1 {
 				// all request returned
 				logs.Info("Done")
@@ -100,7 +102,6 @@ func do(client *http.Client, req *http.Request, sema chan struct{}) error {
 	if resp.StatusCode != 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-
 		return fmt.Errorf("StatusCode %d, Body %s", resp.StatusCode, string(body))
 	}
 	return nil
