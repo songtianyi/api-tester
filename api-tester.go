@@ -41,7 +41,9 @@ func printStat() {
 			if success < 1 {
 				break
 			}
-			logs.Info("QPS", success*1000000/totalCost, "TotalCost", totalCost, "AvgCost", totalCost/success, "MaxCost", maxCost, "MinCost", minCost,
+			logs.Info("QPS", success*1000000/totalCost,
+				"TotalCost", totalCost, "AvgCost", totalCost/success,
+				"MaxCost", maxCost, "MinCost", minCost,
 				"Success", success, "Failed", failed)
 		}
 	}
